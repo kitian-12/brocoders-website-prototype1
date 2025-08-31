@@ -1,0 +1,280 @@
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { User } from "@/entities/User";
+import {
+  Lightbulb,
+  Home,
+  Search,
+  Plus,
+  User as UserIcon,
+  Trophy,
+  Menu,
+  X,
+  Sparkles
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import ProfileSetupModal from "./components/auth/ProfileSetupModal";
+
+export default function Layout({ children, currentPageName }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+      if (currentUser && (!currentUser.full_name || currentUser.full_name.includes('@'))) {
+        setShowProfileSetup(true);
+      }
+    } catch (error) {
+      setUser(null);
+    }
+    setIsLoading(false);
+  };
+
+  const handleLogin = async () => {
+    try {
+      await User.loginWithRedirect(window.location.href);
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await User.logout();
+      setUser(null);
+      navigate(createPageUrl("Home"));
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  const onProfileUpdated = async () => {
+    setShowProfileSetup(false);
+    const updatedUser = await User.me();
+    setUser(updatedUser);
+  }
+
+  const publicNavItems = [
+    { title: "Home", url: createPageUrl("Home"), icon: Home },
+    { title: "About", url: "#about", icon: Sparkles },
+  ];
+
+  const privateNavItems = [
+    { title: "Explore", url: createPageUrl("Explore"), icon: Search },
+    { title: "Submit Idea", url: createPageUrl("Submit"), icon: Plus },
+    { title: "Profile", url: createPageUrl("Profile"), icon: UserIcon },
+    { title: "Ranking", url: createPageUrl("Ranking"), icon: Trophy },
+  ];
+
+  const navItems = user ? privateNavItems : publicNavItems;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-white">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+          <span className="text-lg">Loading BroCoders...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
+      {/* Navigation */}
+      <nav className="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <Link to={createPageUrl("Home")} className="flex items-center gap-2 text-white hover:text-blue-400 transition-colors">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-xl flex items-center justify-center">
+                <Lightbulb className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                BroCoders
+              </span>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-8">
+              {navItems.map((item) => (
+                <Link
+                  key={item.title}
+                  to={item.url}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                    location.pathname === item.url ||
+                    (item.title === "Home" && location.pathname === "/")
+                      ? "bg-blue-600/20 text-blue-400"
+                      : "text-gray-300 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span className="font-medium">{item.title}</span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Auth Section */}
+            <div className="hidden md:flex items-center gap-4">
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-white font-medium">{user.full_name}</p>
+                    <p className="text-gray-400 text-sm">{user.email}</p>
+                  </div>
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">
+                      {user.full_name?.charAt(0).toUpperCase() || "U"}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="border-gray-600 text-gray-300 hover:bg-red-600/20 hover:text-red-400 hover:border-red-500"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleLogin}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium px-6"
+                >
+                  Sign In
+                </Button>
+              )}
+            </div>
+
+            {/* Mobile Menu */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden text-white">
+                  <Menu className="w-6 h-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80 bg-slate-900/95 backdrop-blur-xl border-gray-700">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                      <Lightbulb className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      BroCoders
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.title}
+                      to={item.url}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        location.pathname === item.url ||
+                        (item.title === "Home" && location.pathname === "/")
+                          ? "bg-blue-600/20 text-blue-400"
+                          : "text-gray-300 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.title}</span>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Mobile Auth */}
+                <div className="mt-8 pt-8 border-t border-gray-700">
+                  {user ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-lg">
+                        <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">
+                            {user.full_name?.charAt(0).toUpperCase() || "U"}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{user.full_name}</p>
+                          <p className="text-gray-400 text-sm">{user.email}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="w-full border-gray-600 text-gray-300 hover:bg-red-600/20 hover:text-red-400 hover:border-red-500"
+                      >
+                        Logout
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleLogin}
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium"
+                    >
+                      Sign In
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="flex-1">
+        {children}
+      </main>
+
+      <ProfileSetupModal
+        isOpen={showProfileSetup}
+        onClose={() => setShowProfileSetup(false)}
+        onProfileUpdate={onProfileUpdated}
+      />
+
+      {/* Footer */}
+      <footer className="bg-black/30 backdrop-blur-sm border-t border-white/10 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                <Lightbulb className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                BroCoders
+              </span>
+            </div>
+            <p className="text-gray-400 text-sm">
+              © 2024 BroCoders. Empowering innovation through collaboration.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

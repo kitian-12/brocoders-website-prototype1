@@ -1,0 +1,401 @@
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { User } from "@/entities/User";
+import { Idea } from "@/entities/Idea";
+import { 
+  Lightbulb, 
+  Users, 
+  Zap, 
+  Target,
+  TrendingUp,
+  Heart,
+  MessageCircle,
+  ArrowRight,
+  Star,
+  Sparkles,
+  Plus
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+
+const successStories = [
+  {
+    title: "EcoSmart Packaging",
+    author: "Sarah Chen",
+    impact: "Reduced plastic waste by 40% in local businesses",
+    likes: 234,
+    category: "Environmental"
+  },
+  {
+    title: "AI Study Buddy",
+    author: "Marcus Johnson", 
+    impact: "Helped 10,000+ students improve grades",
+    likes: 189,
+    category: "Education"
+  },
+  {
+    title: "Community Garden Network",
+    author: "Elena Rodriguez",
+    impact: "Created 50+ urban gardens across the city",
+    likes: 156,
+    category: "Community"
+  }
+];
+
+export default function HomePage() {
+  const [user, setUser] = useState(null);
+  const [topIdeas, setTopIdeas] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuthAndLoadIdeas();
+  }, []);
+
+  const checkAuthAndLoadIdeas = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+    } catch (error) {
+      setUser(null);
+    }
+    
+    try {
+      const ideas = await Idea.list("-likes_count", 6);
+      setTopIdeas(ideas);
+    } catch (error) {
+      console.error("Failed to load ideas:", error);
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleLogin = async () => {
+    try {
+      await User.loginWithRedirect(window.location.href);
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  const handleIdeaClick = () => {
+    if (!user) {
+      alert("Please sign in to view full idea details and interact with the community!");
+      return;
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+        <div className="relative max-w-7xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+              Where Ideas
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"> Transform </span>
+              Into Reality
+            </h1>
+            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+              Join a global community of innovators, entrepreneurs, and creators. 
+              Share your ideas, collaborate with others, and turn vision into impact.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {user ? (
+                <>
+                  <Link to={createPageUrl("Submit")}>
+                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 text-lg">
+                      <Plus className="w-5 h-5 mr-2" />
+                      Submit Your Idea
+                    </Button>
+                  </Link>
+                  <Link to={createPageUrl("Explore")}>
+                    <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-3 text-lg">
+                      Explore Ideas
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    onClick={handleLogin}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 text-lg"
+                  >
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Join BroCoders
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-3 text-lg"
+                    onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })}
+                  >
+                    Learn More
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-20 px-4 sm:px-6 lg:px-8 bg-white/5 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Why Choose BroCoders?
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              We're not just another platform. We're a movement that believes every idea has the power to change the world.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: Lightbulb,
+                title: "Share Your Vision",
+                description: "Transform your thoughts into structured ideas with our intuitive submission system. Upload files, add detailed descriptions, and showcase your innovation."
+              },
+              {
+                icon: Users,
+                title: "Connect & Collaborate", 
+                description: "Join a community of like-minded innovators. Like, comment, and build upon each other's ideas to create something extraordinary together."
+              },
+              {
+                icon: Target,
+                title: "Make Real Impact",
+                description: "Track your idea's journey from concept to reality. Our ranking system highlights the most promising ideas and their creators."
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: index * 0.2 }}
+                viewport={{ once: true }}
+              >
+                <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/15 transition-all duration-300 h-full">
+                  <CardHeader className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
+                      <feature.icon className="w-8 h-8 text-white" />
+                    </div>
+                    <CardTitle className="text-white text-xl mb-2">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-300 text-center leading-relaxed">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Success Stories */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Success Stories
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Real ideas from our community that made a difference in the world.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {successStories.map((story, index) => (
+              <motion.div
+                key={story.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: index * 0.2 }}
+                viewport={{ once: true }}
+              >
+                <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/15 transition-all duration-300 h-full group">
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-4">
+                      <Badge className="bg-green-600/20 text-green-400 border-green-400/30">
+                        {story.category}
+                      </Badge>
+                      <div className="flex items-center gap-1 text-yellow-400">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-sm font-medium">{story.likes}</span>
+                      </div>
+                    </div>
+                    <CardTitle className="text-white text-xl mb-2 group-hover:text-blue-400 transition-colors">
+                      {story.title}
+                    </CardTitle>
+                    <p className="text-gray-400 text-sm">by {story.author}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-300 leading-relaxed">{story.impact}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Top Ideas Preview */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/5 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Trending Ideas
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Discover the most popular ideas from our community of innovators.
+              {!user && " Sign in to explore all ideas and join the conversation!"}
+            </p>
+          </motion.div>
+
+          {isLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, index) => (
+                <Card key={index} className="bg-white/10 backdrop-blur-sm border-white/20 animate-pulse">
+                  <CardHeader>
+                    <div className="h-6 bg-white/20 rounded mb-2"></div>
+                    <div className="h-4 bg-white/10 rounded w-2/3"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-white/10 rounded"></div>
+                      <div className="h-4 bg-white/10 rounded w-5/6"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {topIdeas.map((idea, index) => (
+                <motion.div
+                  key={idea.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <Card 
+                    className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/15 transition-all duration-300 h-full group cursor-pointer"
+                    onClick={handleIdeaClick}
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between mb-4">
+                        <Badge className="bg-blue-600/20 text-blue-400 border-blue-400/30">
+                          {idea.category}
+                        </Badge>
+                        <div className="flex items-center gap-3 text-sm text-gray-400">
+                          <div className="flex items-center gap-1">
+                            <Heart className="w-4 h-4" />
+                            <span>{idea.likes_count || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageCircle className="w-4 h-4" />
+                            <span>{idea.comments_count || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <CardTitle className="text-white text-xl mb-2 group-hover:text-blue-400 transition-colors line-clamp-2">
+                        {idea.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-300 leading-relaxed line-clamp-3 mb-4">
+                        {idea.description}
+                      </p>
+                      {!user && (
+                        <div className="bg-blue-600/20 border border-blue-400/30 rounded-lg p-3">
+                          <p className="text-blue-400 text-sm text-center font-medium">
+                            🔒 Sign in to read the full idea and join the discussion
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {user && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="text-center mt-12"
+            >
+              <Link to={createPageUrl("Explore")}>
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3">
+                  Explore All Ideas
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+            </motion.div>
+          )}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      {!user && (
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                Ready to Share Your Next Big Idea?
+              </h2>
+              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                Join thousands of innovators who are already making a difference. 
+                Your idea could be the next breakthrough the world needs.
+              </p>
+              <Button 
+                onClick={handleLogin}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-12 py-4 text-lg"
+              >
+                <Zap className="w-6 h-6 mr-2" />
+                Get Started Today
+              </Button>
+            </motion.div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+

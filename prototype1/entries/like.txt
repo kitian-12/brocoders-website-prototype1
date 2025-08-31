@@ -1,0 +1,13 @@
+{
+  "name": "Like",
+  "type": "object",
+  "properties": {
+    "idea_id": {
+      "type": "string",
+      "description": "ID of the liked idea"
+    }
+  },
+  "required": [
+    "idea_id"
+  ]
+}

@@ -1,0 +1,67 @@
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { User } from '@/entities/User';
+import { Loader2 } from 'lucide-react';
+
+export default function ProfileSetupModal({ isOpen, onClose, onProfileUpdate }) {
+  const [name, setName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError('Please enter a valid name.');
+      return;
+    }
+    setError('');
+    setIsLoading(true);
+    try {
+      await User.updateMyUserData({ full_name: name });
+      onProfileUpdate();
+    } catch (err) {
+      setError('Failed to update profile. Please try again.');
+      console.error('Profile update failed:', err);
+    }
+    setIsLoading(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px] bg-slate-900 border-gray-700 text-white">
+        <DialogHeader>
+          <DialogTitle>Welcome to BroCoders!</DialogTitle>
+          <DialogDescription>
+            Let's set up your profile. Please enter your full name to continue.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                Full Name
+                </Label>
+                <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="col-span-3 bg-white/10 border-white/20"
+                    placeholder="e.g. Jane Doe"
+                />
+            </div>
+            {error && <p className="text-red-400 text-sm col-span-4 text-center">{error}</p>}
+            </div>
+            <DialogFooter>
+            <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save and Continue
+            </Button>
+            </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,0 +1,91 @@
+
+import React, { useState, useEffect, useCallback } from "react";
+import { CollaborationRequest } from "@/entities/all";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader2, Users, Check, X } from "lucide-react";
+
+// Helper function to derive a display name from an email
+function getDisplayName(email) {
+    if (!email || typeof email !== 'string') {
+        return 'Anonymous';
+    }
+    return email.split('@')[0];
+}
+
+export default function CollaborationRequests({ user }) {
+    const [requests, setRequests] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchRequests = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const pendingRequests = await CollaborationRequest.filter({ 
+                idea_owner_email: user.email,
+                status: 'pending'
+            });
+            setRequests(pendingRequests);
+        } catch (e) {
+            console.error("Failed to fetch collaboration requests", e);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user.email]);
+
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
+
+    const handleRequest = async (request, newStatus) => {
+        try {
+            await CollaborationRequest.update(request.id, { status: newStatus });
+            fetchRequests(); // Refresh list
+        } catch (e) {
+            console.error(`Failed to ${newStatus} request`, e);
+            alert(`Failed to update request. Please try again.`);
+        }
+    };
+
+    return (
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardHeader>
+                <div className="flex items-center gap-3">
+                    <Users className="w-6 h-6 text-purple-400" />
+                    <CardTitle className="text-white text-2xl">Collaboration Requests</CardTitle>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                    </div>
+                ) : requests.length > 0 ? (
+                    <div className="space-y-4">
+                        {requests.map(req => (
+                            <div key={req.id} className="bg-white/5 p-4 rounded-lg flex flex-col md:flex-row justify-between md:items-center gap-4">
+                                <div>
+                                    <p className="text-gray-300">
+                                        <span className="font-semibold text-blue-400">{getDisplayName(req.created_by)}</span> wants to collaborate on:
+                                    </p>
+                                    <p className="font-bold text-lg text-white">{req.idea_title}</p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleRequest(req, 'accepted')}>
+                                        <Check className="w-4 h-4 mr-2" /> Accept
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleRequest(req, 'rejected')}>
+                                        <X className="w-4 h-4 mr-2" /> Reject
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-gray-400 text-center py-8">
+                        You have no pending collaboration requests.
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+    );
+}

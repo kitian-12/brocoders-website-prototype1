@@ -1,0 +1,32 @@
+{
+  "name": "CollaborationRequest",
+  "type": "object",
+  "properties": {
+    "idea_id": {
+      "type": "string",
+      "description": "ID of the idea"
+    },
+    "idea_title": {
+      "type": "string",
+      "description": "Title of the idea"
+    },
+    "idea_owner_email": {
+      "type": "string",
+      "description": "Email of the idea owner"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "rejected"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "idea_id",
+    "idea_title",
+    "idea_owner_email"
+  ]
+}

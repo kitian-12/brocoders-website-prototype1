@@ -1,0 +1,206 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Idea } from "@/entities/Idea";
+import { User } from "@/entities/User";
+import { UploadFile } from "@/integrations/Core";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Lightbulb, UploadCloud, Send, File as FileIcon, Loader2, ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function SubmitPage() {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState("");
+  const [problemStatement, setProblemStatement] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [file, setFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [user, setUser] = React.useState(null);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await User.me();
+        setUser(currentUser);
+      } catch (e) {
+        // Not logged in, redirect or show login prompt
+        navigate(createPageUrl("Home"));
+      }
+    };
+    fetchUser();
+  }, [navigate]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title || !description || !category || !problemStatement) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      let attachment_url = null;
+      if (file) {
+        const uploadResult = await UploadFile({ file });
+        attachment_url = uploadResult.file_url;
+      }
+
+      await Idea.create({
+        title,
+        problem_statement: problemStatement,
+        description,
+        category,
+        attachment_url,
+      });
+
+      navigate(createPageUrl("Explore"));
+
+    } catch (err) {
+      console.error("Failed to submit idea:", err);
+      setError("An error occurred while submitting your idea. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!user) {
+      return (
+          <div className="min-h-screen flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-white" />
+          </div>
+      )
+  }
+
+  return (
+    <div className="min-h-screen p-4 md:p-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-3xl mx-auto"
+      >
+        <Button
+            variant="ghost"
+            onClick={() => navigate(createPageUrl("Explore"))}
+            className="text-gray-400 hover:text-white mb-6"
+        >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Explore
+        </Button>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+          <CardHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <Lightbulb className="w-8 h-8 text-blue-400" />
+              <CardTitle className="text-3xl font-bold text-white">Submit a New Idea</CardTitle>
+            </div>
+            <p className="text-gray-400">Bring your vision to the community. Fill out the details below.</p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-white">Idea Title</Label>
+                <Input
+                  id="title"
+                  placeholder="e.g., AI-Powered Personal Finance Coach"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white placeholder-gray-400"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="problem_statement" className="text-white">Problem Statement</Label>
+                <Textarea
+                  id="problem_statement"
+                  placeholder="What problem does this idea solve?"
+                  value={problemStatement}
+                  onChange={(e) => setProblemStatement(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white placeholder-gray-400 min-h-[80px]"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category" className="text-white">Category</Label>
+                <Select onValueChange={setCategory} value={category}>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Select a category for your idea" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="technology">Technology</SelectItem>
+                    <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="design">Design</SelectItem>
+                    <SelectItem value="health">Health</SelectItem>
+                    <SelectItem value="education">Education</SelectItem>
+                    <SelectItem value="entertainment">Entertainment</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-white">Solution Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe your solution in detail. How does it work?"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white placeholder-gray-400 min-h-[150px]"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="attachment" className="text-white">Attachment (Optional)</Label>
+                <div className="relative flex items-center justify-center w-full">
+                  <label htmlFor="attachment-file" className="flex flex-col items-center justify-center w-full h-48 border-2 border-white/20 border-dashed rounded-lg cursor-pointer bg-white/5 hover:bg-white/10">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <UploadCloud className="w-8 h-8 mb-4 text-gray-400" />
+                      <p className="mb-2 text-sm text-gray-400"><span className="font-semibold text-blue-400">Click to upload</span> or drag and drop</p>
+                      <p className="text-xs text-gray-500">PDF, PNG, JPG, DOCX (MAX. 10MB)</p>
+                    </div>
+                    <input id="attachment-file" type="file" className="hidden" onChange={(e) => setFile(e.target.files[0])} />
+                  </label>
+                </div>
+                {file && (
+                  <div className="mt-2 flex items-center gap-2 p-2 bg-white/10 rounded-lg">
+                    <FileIcon className="w-5 h-5 text-blue-400" />
+                    <span className="text-sm text-gray-300">{file.name}</span>
+                    <button type="button" onClick={() => setFile(null)} className="ml-auto text-red-400 hover:text-red-300">&times;</button>
+                  </div>
+                )}
+              </div>
+
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-5 h-5 mr-2" />
+                  )}
+                  {isSubmitting ? "Submitting Idea..." : "Submit My Idea"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}

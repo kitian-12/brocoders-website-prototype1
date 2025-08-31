@@ -1,0 +1,153 @@
+
+import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
+import { Idea, Comment, CollaborationRequest } from "@/entities/all";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Loader2, Lightbulb, MessageSquare, Award } from "lucide-react";
+import { format } from "date-fns";
+import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import CollaborationRequests from "../components/profile/CollaborationRequests";
+
+const IdeaItem = ({ idea }) => (
+  <div className="bg-white/5 p-4 rounded-lg flex justify-between items-start">
+    <div>
+      <h4 className="text-lg font-semibold text-white mb-1">{idea.title}</h4>
+      <p className="text-sm text-gray-400">
+        Posted on {format(new Date(idea.created_date), "MMM d, yyyy")}
+      </p>
+    </div>
+    <div className="flex items-center gap-4 text-sm text-gray-300">
+      <span>{idea.likes_count || 0} Likes</span>
+      <span>{idea.comments_count || 0} Comments</span>
+    </div>
+  </div>
+);
+
+export default function ProfilePage() {
+  const [user, setUser] = useState(null);
+  const [ideas, setIdeas] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalLikes, setTotalLikes] = useState(0);
+
+  useEffect(() => {
+    const loadProfileData = async () => {
+      try {
+        const currentUser = await User.me();
+        setUser(currentUser);
+
+        const userIdeas = await Idea.filter({ created_by: currentUser.email }, "-created_date");
+        setIdeas(userIdeas);
+
+        const userComments = await Comment.filter({ created_by: currentUser.email }, "-created_date");
+        setComments(userComments);
+
+        const likes = userIdeas.reduce((acc, idea) => acc + (idea.likes_count || 0), 0);
+        setTotalLikes(likes);
+      } catch (error) {
+        console.error("Failed to load profile data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProfileData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        You must be logged in to view this page.
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen p-4 md:p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-5xl mx-auto"
+      >
+        {/* Profile Header */}
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20 mb-8">
+          <CardContent className="p-6 flex flex-col md:flex-row items-center gap-6">
+            <Avatar className="w-24 h-24 text-3xl bg-gradient-to-br from-blue-500 to-purple-600">
+              <AvatarFallback className="bg-transparent text-white font-bold">
+                {user.full_name?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-center md:text-left">
+              <h1 className="text-3xl font-bold text-white">{user.full_name}</h1>
+              <p className="text-gray-400">{user.email}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardContent className="p-6 flex items-center gap-4">
+              <Lightbulb className="w-8 h-8 text-blue-400" />
+              <div>
+                <p className="text-2xl font-bold text-white">{ideas.length}</p>
+                <p className="text-gray-400">Ideas Submitted</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardContent className="p-6 flex items-center gap-4">
+              <Award className="w-8 h-8 text-yellow-400" />
+              <div>
+                <p className="text-2xl font-bold text-white">{totalLikes}</p>
+                <p className="text-gray-400">Total Likes Received</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardContent className="p-6 flex items-center gap-4">
+              <MessageSquare className="w-8 h-8 text-green-400" />
+              <div>
+                <p className="text-2xl font-bold text-white">{comments.length}</p>
+                <p className="text-gray-400">Comments Made</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Collaboration Requests */}
+        <div className="mb-8">
+            <CollaborationRequests user={user} />
+        </div>
+
+        {/* My Ideas */}
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+          <CardHeader>
+            <CardTitle className="text-white text-2xl">My Submitted Ideas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {ideas.length > 0 ? (
+              <div className="space-y-4">
+                {ideas.map(idea => <IdeaItem key={idea.id} idea={idea} />)}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-center py-8">
+                You haven't submitted any ideas yet.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}

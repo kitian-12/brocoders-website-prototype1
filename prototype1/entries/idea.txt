@@ -1,0 +1,51 @@
+{
+  "name": "Idea",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "The idea title"
+    },
+    "problem_statement": {
+      "type": "string",
+      "description": "The problem this idea solves"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the idea"
+    },
+    "attachment_url": {
+      "type": "string",
+      "description": "URL to uploaded attachment file"
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of likes this idea has received"
+    },
+    "comments_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of comments this idea has received"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "technology",
+        "business",
+        "design",
+        "health",
+        "education",
+        "entertainment",
+        "other"
+      ],
+      "default": "other",
+      "description": "Category of the idea"
+    }
+  },
+  "required": [
+    "title",
+    "problem_statement",
+    "description"
+  ]
+}
