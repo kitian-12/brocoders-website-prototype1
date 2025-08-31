@@ -1,0 +1,101 @@
+
+import React, { useState, useEffect, useCallback } from "react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Like } from "@/entities/Like";
+import { Heart, MessageCircle } from "lucide-react";
+import { motion } from "framer-motion";
+
+// Helper function to derive a display name from an email
+function getDisplayName(email) {
+    if (!email || typeof email !== 'string') {
+        return 'Anonymous';
+    }
+    return email.split('@')[0];
+}
+
+export default function IdeaCard({ idea, user, onLike, onSelect, index }) {
+  const [isLiked, setIsLiked] = useState(false);
+  const [isCheckingLike, setIsCheckingLike] = useState(true);
+
+  const checkIfLiked = useCallback(async () => {
+    if (!user) {
+      setIsCheckingLike(false);
+      return;
+    }
+    try {
+      const likes = await Like.filter({ idea_id: idea.id, created_by: user.email });
+      setIsLiked(likes.length > 0);
+    } catch (error) {
+      console.error("Failed to check like status:", error);
+    }
+    setIsCheckingLike(false);
+  }, [idea.id, user]);
+
+  useEffect(() => {
+    checkIfLiked();
+  }, [checkIfLiked]);
+
+  const handleLike = async (e) => {
+    e.stopPropagation();
+    setIsLiked(!isLiked); // Optimistic update
+    await onLike(idea.id);
+  };
+
+  const categoryColors = {
+    technology: "bg-blue-600/20 text-blue-400 border-blue-400/30",
+    business: "bg-green-600/20 text-green-400 border-green-400/30",
+    design: "bg-purple-600/20 text-purple-400 border-purple-400/30",
+    health: "bg-red-600/20 text-red-400 border-red-400/30",
+    education: "bg-yellow-600/20 text-yellow-400 border-yellow-400/30",
+    entertainment: "bg-pink-600/20 text-pink-400 border-pink-400/30",
+    other: "bg-gray-600/20 text-gray-400 border-gray-400/30"
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+    >
+      <Card 
+        className="bg-white/10 backdrop-blur-sm border-white/20 hover:border-blue-400 transition-all duration-300 cursor-pointer group aspect-square flex flex-col justify-between p-4"
+        onClick={onSelect}
+      >
+        <div>
+          <div className="flex justify-between items-start mb-2">
+            <Badge className={categoryColors[idea.category] || categoryColors.other}>
+              {idea.category}
+            </Badge>
+            <span className="text-gray-400 text-xs">by {getDisplayName(idea.created_by)}</span>
+          </div>
+          <h3 className="text-white text-lg font-bold group-hover:text-blue-400 transition-colors line-clamp-2">
+            {idea.title}
+          </h3>
+          <p className="text-gray-300 text-sm leading-relaxed mt-2 line-clamp-3">
+            {idea.description}
+          </p>
+        </div>
+        
+        <div className="flex items-center justify-end gap-4 mt-4">
+          <button
+            onClick={handleLike}
+            disabled={isCheckingLike || !user}
+            className={`flex items-center gap-1.5 transition-colors text-sm ${
+              isLiked 
+                ? "text-red-400 hover:text-red-300" 
+                : "text-gray-400 hover:text-red-400"
+            } disabled:opacity-50`}
+          >
+            <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+            <span>{idea.likes_count || 0}</span>
+          </button>
+          <div className="flex items-center gap-1.5 text-gray-400 text-sm">
+            <MessageCircle className="w-4 h-4" />
+            <span>{idea.comments_count || 0}</span>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
